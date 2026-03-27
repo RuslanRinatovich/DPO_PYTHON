@@ -1,4 +1,41 @@
-# Урок 3. QT. Исключения
+# Урок 3. QT. Исключения 📚
+
+## 📑 Оглавление
+
+1. [Понятие исключения. Обработка исключений. Собственные исключения](#понятие-исключения-обработка-исключений-собственные-исключения)
+   - [Аннотация](#аннотация)
+2. [Что такое ошибка или исключение](#что-такое-ошибка-или-исключение)
+3. [Стек вызовов в Python](#стек-вызовов-в-python)
+4. [Работа с кодами возврата](#работа-с-кодами-возврата)
+5. [Пример: приложение для оплаты картой (PyQt6)](#пример-приложение-для-оплаты-картой-pyqt6)
+   - [Алгоритм Луна для проверки номера карты](#алгоритм-луна-для-проверки-номера-карты)
+   - [Добавляем проверку в приложение](#добавляем-проверку-в-приложение)
+   - [Настройка обработки исключений в PyQt6](#настройка-обработки-исключений-в-pyqt6)
+   - [Реализация с кодами возврата](#реализация-с-кодами-возврата)
+6. [Трудности работы с кодами возврата](#трудности-работы-с-кодами-возврата)
+7. [Обработка исключений](#обработка-исключений)
+   - [Дерево встроенных исключений](#дерево-встроенных-исключений)
+   - [Доступ к объекту исключения](#доступ-к-объекту-исключения)
+   - [Переписываем приложение на PyQt6 с использованием исключений](#переписываем-приложение-на-pyqt6-с-использованием-исключений)
+8. [Методики LBYL и EAFP](#методики-lbyl-и-eafp)
+9. [Полный синтаксис блока try...except](#полный-синтаксис-блока-tryexcept)
+10. [Создание пользовательских типов ошибок](#создание-пользовательских-типов-ошибок)
+11. [Конструкция assert](#конструкция-assert)
+12. [Практические примеры на PyQt6](#практические-примеры-на-pyqt6)
+    - [Пример 1: Обработка ошибок ввода в QLineEdit](#пример-1-обработка-ошибок-ввода-в-qlineedit)
+    - [Пример 2: Работа с файлами с использованием finally](#пример-2-работа-с-файлами-с-использованием-finally)
+    - [Пример 3: Использование EAFP в PyQt6](#пример-3-использование-eafp-в-pyqt6)
+    - [Пример 4: Собственные исключения в PyQt6 приложении](#пример-4-собственные-исключения-в-pyqt6-приложении)
+    - [Пример 5: Множественные except и finally в сложном приложении](#пример-5-множественные-except-и-finally-в-сложном-приложении)
+13. [Задания для самостоятельной работы](#задания-для-самостоятельной-работы)
+    - [Задание 1: Проверка ввода телефона 📱](#задание-1-проверка-ввода-телефона-)
+    - [Задание 2: Сохранение данных с подтверждением 💾](#задание-2-сохранение-данных-с-подтверждением-)
+    - [Задание 3: Поиск товара в корзине 🛒](#задание-3-поиск-товара-в-корзине-)
+    - [Задание 4: Валидация банковской карты 💳](#задание-4-валидация-банковской-карты-)
+    - [Задание 5: Калькулятор с историей операций 🧮](#задание-5-калькулятор-с-историей-операций-)
+14. [Заключение](#заключение)
+
+---
 
 ## Понятие исключения. Обработка исключений. Собственные исключения
 
@@ -15,6 +52,15 @@
 
 Во время работы программы иногда возникают непредвиденные обстоятельства («упс, что-то пошло не так») — как правило, внешние. Программа должна их верно обрабатывать. Мы будем называть такие обстоятельства ошибками или исключениями.
 
+```mermaid
+graph TD
+    A[Основной алгоритм] --> B{Возникло исключение?}
+    B -->|Нет| C[Продолжаем выполнение]
+    B -->|Да| D[Обработчик исключений]
+    D --> E[Восстановление/Логирование]
+    E --> C
+```
+
 Чтобы было понятнее, рассмотрим пример алгоритма посещения магазина.
 
 Родители посылают дочь в магазин и просят купить молока некоторого бренда ценой 40 рублей. Это и есть для девочки основной алгоритм в данной ситуации. Однако могут возникнуть непредвиденные обстоятельства: именно этот магазин сейчас закрыт (нужно ли тратить время и идти в следующий?), такого молока в продаже нет (вернуться обратно или купить другое?), молоко подорожало (все равно брать?), заканчивается срок годности (это важно?) и так далее.
@@ -27,10 +73,10 @@
 
 Например, вы написали алгоритм, скачивающий плейлист из ВКонтакте в папку на компьютере. Запустили его. Что же может пойти не так?
 
-- Проблемы с доступом в Интернет
+- Проблемы с доступом в Интернет 🌐
 - Сервера ВКонтакте работают нестабильно и не отвечают
 - Если алгоритм дает имена файлам по названиям треков, то ему могут попасться недопустимые символы
-- Закончилось свободное место на диске
+- Закончилось свободное место на диске 💾
 - ...
 
 Есть несколько путей:
@@ -60,12 +106,22 @@ ZeroDivisionError: division by zero
 
 Теперь поговорим немного про стек вызовов (traceback). Программа на Python состоит из блоков, входящих один в другой, поэтому у любой точки программы есть вложенность. Давайте посмотрим, какую информацию дает стек вызовов, когда указывает на место ошибки.
 
+```mermaid
+graph TD
+    subgraph "Стек вызовов"
+        A[main] --> B[run_division]
+        B --> C[div]
+        C --> D[ZeroDivisionError]
+    end
+    D --> E[Вывод traceback]
+```
+
 Например, вычисление частного двух чисел, введенных пользователем. Отметим, что огромное количество ошибок происходит из-за того, что пользователь ввел неправильные данные.
 
 Проведем три эксперимента:
-1. Введем правильные числа
-2. Введем второе число, равное 0
-3. Введем не число, а строку
+1. Введем правильные числа ✅
+2. Введем второе число, равное 0 ⚠️
+3. Введем не число, а строку ❌
 
 ```python
 def div(a, b):
@@ -128,6 +184,18 @@ print(s.find("Д"))  # -1
 ```
 
 Из-за того, что в исходной строке не было символа «Д», нам было возвращено значение −1. Это и есть код возврата. Так как любая функция в Python возвращает значения, мы можем использовать их для кодирования информации об ошибке.
+
+```mermaid
+graph LR
+    subgraph "Коды возврата"
+        A[Функция] --> B{Успех?}
+        B -->|Да| C[Вернуть результат]
+        B -->|Нет| D[Вернуть код ошибки]
+        C --> E[Продолжить работу]
+        D --> F[Проверить код ошибки]
+        F --> G[Обработать ошибку]
+    end
+```
 
 Для каждой ошибки можно придумать свой код возврата. Коды не должны совпадать с возможными обычными ответами.
 
@@ -239,6 +307,18 @@ self.hintLabel.setText('Введите номер карты (16 цифр без
 1. Каждую цифру в нечетной позиции, начиная с первого числа слева, умножаем на два. Если результат больше 9, складываем обе цифры этого двузначного числа (или вычитаем 9)
 2. Складываем все результаты и цифры на четных позициях — в том числе и последнюю контрольную цифру
 3. Если сумма кратна 10, то номер карты правильный
+
+```mermaid
+graph TD
+    A[Номер карты: 4728795357233848] --> B[Цифры на нечетных позициях]
+    A --> C[Цифры на четных позициях]
+    B --> D[Умножить на 2, если >9 вычесть 9]
+    D --> E[Суммировать]
+    C --> E
+    E --> F{Сумма % 10 == 0?}
+    F -->|Да| G[Карта валидна ✅]
+    F -->|Нет| H[Карта невалидна ❌]
+```
 
 ```python
 def luhn_algorithm(self, card):
@@ -366,6 +446,25 @@ if __name__ == '__main__':
 
 Мы видим, что даже простая функция для обработки пользовательских данных обрастает дополнительным кодом, проверкой многих условий и «магическими» кодами возврата (404). Если функция с кодом возврата находится глубоко в стеке вызовов, то придется сделать так, чтобы ее правильно обрабатывала вся вышестоящая цепочка функций. Каждая из них должна принимать код и возвращать свой.
 
+```mermaid
+graph TD
+    subgraph "Проблема кодов возврата"
+        A[Функция A] --> B[Вызывает B]
+        B --> C[Вызывает C]
+        C --> D{Ошибка?}
+        D -->|Да| E[Возвращает код 404]
+        E --> F[B проверяет код]
+        F --> G[Возвращает свой код]
+        G --> H[A проверяет код]
+        H --> I[Обработка ошибки]
+    end
+    style D fill:#ff9999
+    style E fill:#ff9999
+    style F fill:#ffcc99
+    style G fill:#ffcc99
+    style H fill:#ffcc99
+```
+
 Чтобы упростить обработку ошибок, программисты стали работать с исключениями как с объектами.
 
 ---
@@ -408,6 +507,36 @@ except ValueError:
 ### Дерево встроенных исключений
 
 Так как исключения — это классы, то они могут быть наследниками друг друга. Обработчик поймает не только указанные исключения, но и всех их наследников.
+
+```mermaid
+graph TD
+    BaseException[BaseException] --> SystemExit[SystemExit]
+    BaseException --> KeyboardInterrupt[KeyboardInterrupt]
+    BaseException --> GeneratorExit[GeneratorExit]
+    BaseException --> Exception[Exception]
+    
+    Exception --> ArithmeticError[ArithmeticError]
+    Exception --> LookupError[LookupError]
+    Exception --> OSError[OSError]
+    Exception --> ValueError[ValueError]
+    Exception --> TypeError[TypeError]
+    Exception --> ...
+    
+    ArithmeticError --> ZeroDivisionError[ZeroDivisionError]
+    ArithmeticError --> OverflowError[OverflowError]
+    
+    LookupError --> IndexError[IndexError]
+    LookupError --> KeyError[KeyError]
+    
+    OSError --> FileNotFoundError[FileNotFoundError]
+    OSError --> PermissionError[PermissionError]
+    
+    ValueError --> UnicodeError[UnicodeError]
+    
+    style BaseException fill:#f9f
+    style Exception fill:#ccf
+    style ZeroDivisionError fill:#faa
+```
 
 Дерево встроенных исключений выглядит так:
 
@@ -521,7 +650,7 @@ if __name__ == '__main__':
 ```
 
 **Преимущества подхода с исключениями:**
-- Код становится короче и чище
+- Код становится короче и чище ✨
 - Не надо ставить конструкции `if` во всем стеке вызовов
 - Работа с ошибками становится гибче благодаря дереву исключений
 - Мы можем работать с системными исключениями (например, с прерыванием по нажатию на клавишу) так же легко, как с собственными
@@ -553,6 +682,21 @@ except KeyError:
     pass
 ```
 
+```mermaid
+graph LR
+    subgraph "LBYL (Look Before You Leap)"
+        A1[Проверить условие] --> B1{Условие выполнено?}
+        B1 -->|Да| C1[Выполнить действие]
+        B1 -->|Нет| D1[Обработать ошибку]
+    end
+    
+    subgraph "EAFP (Easier to Ask Forgiveness)"
+        A2[Выполнить действие] --> B2{Возникло исключение?}
+        B2 -->|Нет| C2[Продолжить]
+        B2 -->|Да| D2[Обработать исключение]
+    end
+```
+
 В Python преобладает EAFP-подход, особенно если речь идет о стандартных исключениях и действиях с данными внутри них. В коде многопоточной программы лучше использовать EAFP, так как один поток может неожиданно изменить данные, которые только что проверил другой.
 
 **В контексте PyQt6:** EAFP особенно полезен при работе с виджетами, когда мы не уверены, существует ли определенный элемент интерфейса или имеет ли он нужные свойства.
@@ -580,6 +724,17 @@ for i in range(10):
         print('Всё хорошо')
     finally:
         print('Идём дальше')
+```
+
+```mermaid
+graph TD
+    A[try: выполнить код] --> B{Возникло исключение?}
+    B -->|Нет| C[Выполнить else]
+    B -->|Да| D[Найти подходящий except]
+    D --> E[Выполнить except]
+    C --> F[Выполнить finally]
+    E --> F
+    F --> G[Продолжить выполнение]
 ```
 
 **Важные моменты:**
@@ -688,6 +843,24 @@ if __name__ == '__main__':
 **Почему классы-исключения «пустые»?**
 Они содержат только `pass`, потому что нам не нужна дополнительная логика — достаточно самого факта существования разных типов исключений для их различения при обработке.
 
+```mermaid
+graph TD
+    subgraph "Иерархия собственных исключений"
+        A[Exception] --> B[CardError]
+        B --> C[CardFormatError]
+        B --> D[CardLuhnError]
+        B --> E[CardTypeError]
+    end
+    
+    subgraph "Обработка"
+        F[try: операции с картой] --> G{Какое исключение?}
+        G -->|CardFormatError| H[Сообщение о формате]
+        G -->|CardLuhnError| I[Сообщение о Луна]
+        G -->|CardError| J[Общее сообщение]
+        G -->|Exception| K[Непредвиденная ошибка]
+    end
+```
+
 ---
 
 ## Конструкция assert
@@ -731,18 +904,531 @@ def load_ui(self):
 
 ---
 
+## Практические примеры на PyQt6
+
+### Пример 1: Обработка ошибок ввода в QLineEdit 🎯
+
+**Описание:** Создайте форму с полем ввода возраста. При нажатии на кнопку программа должна проверить, что введено целое число от 0 до 120. Если данные некорректны — вывести сообщение об ошибке в QLabel.
+
+**Решение:**
+```python
+import sys
+from PyQt6 import uic
+from PyQt6.QtWidgets import QWidget, QApplication, QMessageBox
+
+class AgeForm(QWidget):
+    def __init__(self):
+        super().__init__()
+        uic.loadUi('age.ui', self)  # Предполагается, что есть QLineEdit ageInput, QPushButton checkButton, QLabel resultLabel
+        self.checkButton.clicked.connect(self.check_age)
+
+    def check_age(self):
+        try:
+            age = int(self.ageInput.text())
+            if 0 <= age <= 120:
+                self.resultLabel.setText(f"Возраст {age} лет — корректный")
+                self.resultLabel.setStyleSheet("color: green")
+            else:
+                raise ValueError("Возраст должен быть от 0 до 120")
+        except ValueError as e:
+            self.resultLabel.setText(f"Ошибка: {e}")
+            self.resultLabel.setStyleSheet("color: red")
+        except Exception as e:
+            self.resultLabel.setText(f"Непредвиденная ошибка: {e}")
+            self.resultLabel.setStyleSheet("color: red")
+
+def except_hook(cls, exception, traceback):
+    sys.__excepthook__(cls, exception, traceback)
+
+if __name__ == '__main__':
+    app = QApplication(sys.argv)
+    window = AgeForm()
+    window.show()
+    sys.excepthook = except_hook
+    sys.exit(app.exec())
+```
+
+---
+
+### Пример 2: Работа с файлами с использованием finally 📁
+
+**Описание:** Приложение открывает текстовый файл, читает его содержимое и отображает в QTextEdit. В случае ошибки (файл не найден, нет прав доступа) выводится сообщение. Блок `finally` используется для закрытия файла и вывода сообщения о завершении операции.
+
+**Решение:**
+```python
+import sys
+from PyQt6 import uic
+from PyQt6.QtWidgets import QWidget, QApplication, QFileDialog, QMessageBox
+
+class FileReader(QWidget):
+    def __init__(self):
+        super().__init__()
+        uic.loadUi('filereader.ui', self)  # QPushButton openButton, QTextEdit textEdit
+        self.openButton.clicked.connect(self.open_file)
+
+    def open_file(self):
+        file_path, _ = QFileDialog.getOpenFileName(self, "Выберите файл", "", "Text files (*.txt)")
+        if not file_path:
+            return
+        
+        file_handle = None
+        try:
+            file_handle = open(file_path, 'r', encoding='utf-8')
+            content = file_handle.read()
+            self.textEdit.setPlainText(content)
+            self.textEdit.setStyleSheet("")
+        except FileNotFoundError:
+            self.textEdit.setPlainText("Ошибка: Файл не найден")
+            self.textEdit.setStyleSheet("color: red")
+        except PermissionError:
+            self.textEdit.setPlainText("Ошибка: Нет прав на чтение файла")
+            self.textEdit.setStyleSheet("color: red")
+        except UnicodeDecodeError:
+            self.textEdit.setPlainText("Ошибка: Не удалось декодировать файл (неверная кодировка)")
+            self.textEdit.setStyleSheet("color: red")
+        except Exception as e:
+            self.textEdit.setPlainText(f"Непредвиденная ошибка: {e}")
+            self.textEdit.setStyleSheet("color: red")
+        finally:
+            if file_handle:
+                file_handle.close()
+                print("Файл закрыт")
+
+def except_hook(cls, exception, traceback):
+    sys.__excepthook__(cls, exception, traceback)
+
+if __name__ == '__main__':
+    app = QApplication(sys.argv)
+    window = FileReader()
+    window.show()
+    sys.excepthook = except_hook
+    sys.exit(app.exec())
+```
+
+---
+
+### Пример 3: Использование EAFP в PyQt6 🔄
+
+**Описание:** Приложение работает со словарем пользователей. При нажатии на кнопку пытаемся получить данные пользователя по ключу, используя подход EAFP (проще извиниться, чем спросить разрешения).
+
+**Решение:**
+```python
+import sys
+from PyQt6 import uic
+from PyQt6.QtWidgets import QWidget, QApplication
+
+class UserForm(QWidget):
+    def __init__(self):
+        super().__init__()
+        uic.loadUi('user.ui', self)  # QLineEdit userIdInput, QPushButton getButton, QLabel nameLabel, QLabel ageLabel
+        self.users = {
+            "1": {"name": "Иван", "age": 25},
+            "2": {"name": "Мария", "age": 30},
+            "3": {"name": "Петр", "age": 35}
+        }
+        self.getButton.clicked.connect(self.get_user)
+
+    def get_user(self):
+        user_id = self.userIdInput.text()
+        
+        # EAFP подход
+        try:
+            user = self.users[user_id]
+            self.nameLabel.setText(f"Имя: {user['name']}")
+            self.ageLabel.setText(f"Возраст: {user['age']}")
+            self.nameLabel.setStyleSheet("color: green")
+            self.ageLabel.setStyleSheet("color: green")
+        except KeyError:
+            self.nameLabel.setText("Ошибка: Пользователь не найден")
+            self.ageLabel.setText("")
+            self.nameLabel.setStyleSheet("color: red")
+        
+        # LBYL подход для сравнения (закомментирован)
+        # if user_id in self.users:
+        #     user = self.users[user_id]
+        #     self.nameLabel.setText(f"Имя: {user['name']}")
+        #     self.ageLabel.setText(f"Возраст: {user['age']}")
+        # else:
+        #     self.nameLabel.setText("Ошибка: Пользователь не найден")
+
+def except_hook(cls, exception, traceback):
+    sys.__excepthook__(cls, exception, traceback)
+
+if __name__ == '__main__':
+    app = QApplication(sys.argv)
+    window = UserForm()
+    window.show()
+    sys.excepthook = except_hook
+    sys.exit(app.exec())
+```
+
+---
+
+### Пример 4: Собственные исключения в PyQt6 приложении 🏗️
+
+**Описание:** Приложение для регистрации пользователя с проверкой логина и пароля. Создана иерархия собственных исключений для различных ошибок валидации.
+
+**Решение:**
+```python
+import sys
+from PyQt6 import uic
+from PyQt6.QtWidgets import QWidget, QApplication
+
+# Иерархия собственных исключений
+class RegistrationError(Exception):
+    pass
+
+class LoginTooShortError(RegistrationError):
+    pass
+
+class PasswordWeakError(RegistrationError):
+    pass
+
+class PasswordMismatchError(RegistrationError):
+    pass
+
+class RegisterForm(QWidget):
+    def __init__(self):
+        super().__init__()
+        uic.loadUi('register.ui', self)  # QLineEdit loginInput, passwordInput, confirmInput, QPushButton registerButton, QLabel resultLabel
+        self.registerButton.clicked.connect(self.register)
+
+    def validate_login(self, login):
+        if len(login) < 4:
+            raise LoginTooShortError("Логин должен содержать минимум 4 символа")
+        return True
+
+    def validate_password(self, password, confirm):
+        if len(password) < 6:
+            raise PasswordWeakError("Пароль должен содержать минимум 6 символов")
+        if not any(c.isdigit() for c in password):
+            raise PasswordWeakError("Пароль должен содержать хотя бы одну цифру")
+        if not any(c.isupper() for c in password):
+            raise PasswordWeakError("Пароль должен содержать хотя бы одну заглавную букву")
+        if password != confirm:
+            raise PasswordMismatchError("Пароли не совпадают")
+        return True
+
+    def register(self):
+        try:
+            login = self.loginInput.text()
+            password = self.passwordInput.text()
+            confirm = self.confirmInput.text()
+            
+            self.validate_login(login)
+            self.validate_password(password, confirm)
+            
+            self.resultLabel.setText("Регистрация успешна!")
+            self.resultLabel.setStyleSheet("color: green")
+            
+        except LoginTooShortError as e:
+            self.resultLabel.setText(f"Ошибка логина: {e}")
+            self.resultLabel.setStyleSheet("color: red")
+        except PasswordWeakError as e:
+            self.resultLabel.setText(f"Ошибка пароля: {e}")
+            self.resultLabel.setStyleSheet("color: red")
+        except PasswordMismatchError as e:
+            self.resultLabel.setText(f"Ошибка: {e}")
+            self.resultLabel.setStyleSheet("color: red")
+        except RegistrationError as e:
+            self.resultLabel.setText(f"Ошибка регистрации: {e}")
+            self.resultLabel.setStyleSheet("color: red")
+        except Exception as e:
+            self.resultLabel.setText(f"Непредвиденная ошибка: {e}")
+            self.resultLabel.setStyleSheet("color: red")
+
+def except_hook(cls, exception, traceback):
+    sys.__excepthook__(cls, exception, traceback)
+
+if __name__ == '__main__':
+    app = QApplication(sys.argv)
+    window = RegisterForm()
+    window.show()
+    sys.excepthook = except_hook
+    sys.exit(app.exec())
+```
+
+---
+
+### Пример 5: Множественные except и finally в сложном приложении 🌐
+
+**Описание:** Приложение для конвертации валют с загрузкой курсов из интернета. Демонстрирует обработку различных типов исключений и гарантированное выполнение блока finally.
+
+**Решение:**
+```python
+import sys
+import json
+from PyQt6 import uic
+from PyQt6.QtWidgets import QWidget, QApplication, QMessageBox
+from PyQt6.QtNetwork import QNetworkAccessManager, QNetworkRequest, QNetworkReply
+from PyQt6.QtCore import QUrl, QEventLoop
+
+class CurrencyConverter(QWidget):
+    def __init__(self):
+        super().__init__()
+        uic.loadUi('converter.ui', self)  # QLineEdit amountInput, QComboBox fromCurrency, toCurrency, QPushButton convertButton, QLabel resultLabel
+        self.convertButton.clicked.connect(self.convert)
+        self.network_manager = QNetworkAccessManager()
+
+    def get_exchange_rate(self, from_curr, to_curr):
+        """Получает курс валюты из API (имитация)"""
+        # Здесь должна быть реальная логика запроса к API
+        # Для примера используем имитацию ошибок
+        
+        # Имитируем различные ошибки
+        if from_curr == "ERROR":
+            raise ConnectionError("Не удалось подключиться к серверу")
+        if from_curr == "TIMEOUT":
+            raise TimeoutError("Превышено время ожидания ответа")
+        if from_curr == "USD" and to_curr == "EUR":
+            return 0.92
+        if from_curr == "EUR" and to_curr == "USD":
+            return 1.09
+        raise ValueError("Курс не найден для указанной пары валют")
+
+    def convert(self):
+        amount_text = self.amountInput.text()
+        from_curr = self.fromCurrency.currentText()
+        to_curr = self.toCurrency.currentText()
+        
+        reply = None
+        try:
+            # Проверка ввода суммы
+            try:
+                amount = float(amount_text)
+                if amount <= 0:
+                    raise ValueError("Сумма должна быть положительной")
+            except ValueError as e:
+                self.resultLabel.setText(f"Ошибка ввода суммы: {e}")
+                self.resultLabel.setStyleSheet("color: red")
+                return
+            
+            # Получение курса (может вызвать несколько исключений)
+            rate = self.get_exchange_rate(from_curr, to_curr)
+            
+            # Вычисление результата
+            result = amount * rate
+            self.resultLabel.setText(f"{amount:.2f} {from_curr} = {result:.2f} {to_curr}")
+            self.resultLabel.setStyleSheet("color: green")
+            
+        except ConnectionError as e:
+            self.resultLabel.setText(f"Сетевая ошибка: {e}")
+            self.resultLabel.setStyleSheet("color: red")
+            QMessageBox.warning(self, "Ошибка сети", 
+                               "Проверьте подключение к интернету и попробуйте снова")
+        except TimeoutError as e:
+            self.resultLabel.setText(f"Таймаут: {e}")
+            self.resultLabel.setStyleSheet("color: red")
+        except ValueError as e:
+            self.resultLabel.setText(f"Ошибка данных: {e}")
+            self.resultLabel.setStyleSheet("color: red")
+        except Exception as e:
+            self.resultLabel.setText(f"Непредвиденная ошибка: {e}")
+            self.resultLabel.setStyleSheet("color: red")
+            # Логируем ошибку в консоль
+            print(f"Критическая ошибка: {type(e).__name__}: {e}")
+        finally:
+            # Этот блок выполнится ВСЕГДА
+            print(f"Попытка конвертации завершена: {from_curr} -> {to_curr}")
+            if reply:
+                reply.deleteLater()
+                print("Сетевой ресурс освобожден")
+            
+            # Обновляем статусную строку (если есть)
+            if hasattr(self, 'statusBar'):
+                self.statusBar().showMessage("Готово", 2000)
+
+def except_hook(cls, exception, traceback):
+    sys.__excepthook__(cls, exception, traceback)
+
+if __name__ == '__main__':
+    app = QApplication(sys.argv)
+    window = CurrencyConverter()
+    window.show()
+    sys.excepthook = except_hook
+    sys.exit(app.exec())
+```
+
+---
+
+## Задания для самостоятельной работы
+
+### Задание 1: Проверка ввода телефона 📱
+
+**Условие:** Создайте PyQt6 приложение с полем ввода номера телефона и кнопкой «Проверить». Реализуйте проверку, что введены только цифры, и длина номера равна 11 символам (российский номер). При ошибках выводите соответствующие сообщения в QLabel. Используйте собственные классы исключений: `PhoneFormatError`, `PhoneLengthError`, `PhoneDigitError`.
+
+**Требования:**
+- Если введены не цифры — исключение `PhoneDigitError`
+- Если длина не 11 — исключение `PhoneLengthError`
+- Для отлова всех ошибок используйте базовый класс `PhoneError`
+- Не забудьте про `except_hook` для корректного вывода ошибок в консоль
+
+**Подсказка:** Используйте метод `isdigit()` для проверки, что строка состоит только из цифр.
+
+---
+
+### Задание 2: Сохранение данных с подтверждением 💾
+
+**Условие:** Создайте PyQt6 приложение с QTextEdit для ввода текста и кнопкой «Сохранить». При сохранении:
+- Если поле ввода пустое — сгенерируйте исключение `EmptyDataError`
+- Если файл не удалось сохранить (ошибка записи) — обработайте `PermissionError` или `OSError`
+- В блоке `finally` выводите в консоль сообщение «Операция сохранения завершена» и очищайте временные переменные
+- После успешного сохранения показывайте QMessageBox с сообщением «Файл сохранен»
+
+**Дополнительно:** Добавьте возможность выбора пути сохранения через QFileDialog.
+
+**Подсказка:** Используйте `QFileDialog.getSaveFileName()` для выбора пути сохранения.
+
+---
+
+### Задание 3: Поиск товара в корзине 🛒
+
+**Условие:** Создайте PyQt6 приложение с QLineEdit для ввода названия товара и кнопкой «Найти». Используйте словарь `cart = {"яблоки": 150, "бананы": 80, "апельсины": 120}`. Реализуйте два варианта поиска (переключатели QRadioButton):
+- **EAFP-вариант:** используйте `try-except KeyError`
+- **LBYL-вариант:** используйте проверку `if товар in cart`
+
+При успешном поиске выводите цену товара, при ошибке — сообщение «Товар не найден». Добавьте секундомер (QTimer) для замера времени выполнения каждого подхода и вывода результата сравнения.
+
+**Подсказка:** Используйте `time.time()` для замера времени выполнения.
+
+---
+
+### Задание 4: Валидация банковской карты 💳
+
+**Условие:** Создайте PyQt6 приложение для проверки номера банковской карты. Используйте алгоритм Луна (пример из лекции). Создайте иерархию исключений:
+
+```
+CardError
+├── CardFormatError (неверный формат: буквы, пробелы, длина не 16)
+├── CardLuhnError (не прошел алгоритм Луна)
+└── CardTypeError (неверный тип: не Visa и не MasterCard)
+```
+
+**Требования:**
+- Номер карты должен содержать 16 цифр (пробелы удаляются автоматически)
+- Первая цифра: 4 для Visa, 5 для MasterCard
+- Проверка по алгоритму Луна
+- Каждое исключение выводит свое сообщение в QLabel
+- Добавьте кнопку «Очистить» для сброса полей
+
+**Подсказка:** Алгоритм Луна реализован в примерах выше.
+
+---
+
+### Задание 5: Калькулятор с историей операций 🧮
+
+**Условие:** Создайте PyQt6 приложение — калькулятор с историей операций. Приложение должно иметь:
+
+**Интерфейс:**
+- QLineEdit для ввода первого числа
+- QLineEdit для ввода второго числа
+- QComboBox для выбора операции (+, -, *, /)
+- QPushButton «Вычислить»
+- QTextEdit для вывода результата
+- QListWidget для отображения истории операций
+
+**Требования к обработке исключений:**
+1. Обработка `ValueError` при преобразовании чисел
+2. Обработка `ZeroDivisionError` при делении на ноль
+3. Обработка `OverflowError` при слишком больших числах
+4. Создайте собственное исключение `CalculationError` для специфических ошибок
+5. Используйте блок `finally` для добавления записи в историю (даже если была ошибка)
+6. История должна содержать: операцию, результат или текст ошибки, время операции
+
+**Дополнительные требования:**
+- Реализуйте кнопку «Очистить историю»
+- Сохраняйте историю в файл при закрытии приложения
+- Загружайте историю при запуске (обрабатывайте возможные ошибки чтения файла)
+
+**Пример UI (converter.ui):**
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>CalculatorForm</class>
+ <widget class="QWidget" name="CalculatorForm">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>500</width>
+    <height>400</height>
+   </rect>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout">
+     <item>
+      <widget class="QLineEdit" name="firstNumber"/>
+     </item>
+     <item>
+      <widget class="QComboBox" name="operation">
+       <item>+</item>
+       <item>-</item>
+       <item>*</item>
+       <item>/</item>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLineEdit" name="secondNumber"/>
+     </item>
+     <item>
+      <widget class="QPushButton" name="calculateButton">
+       <property name="text">
+        <string>=</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <widget class="QTextEdit" name="resultDisplay"/>
+   </item>
+   <item>
+    <widget class="QLabel" name="historyLabel">
+     <property name="text">
+      <string>История операций:</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QListWidget" name="historyList"/>
+   </item>
+   <item>
+    <widget class="QPushButton" name="clearHistoryButton">
+     <property name="text">
+      <string>Очистить историю</string>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+</ui>
+```
+
+---
+
 ## Заключение
 
 Исключения — прекрасный инструмент, который позволит вам писать более простые и красивые программы. В контексте PyQt6 они особенно важны, так как GUI-приложения:
-- Активно взаимодействуют с пользователем (источник множества ошибок)
-- Работают с внешними ресурсами (файлы, сеть)
-- Должны оставаться отзывчивыми даже при возникновении ошибок
+- Активно взаимодействуют с пользователем (источник множества ошибок) 👤
+- Работают с внешними ресурсами (файлы, сеть) 🌐
+- Должны оставаться отзывчивыми даже при возникновении ошибок ⚡
+
+```mermaid
+graph TD
+    subgraph "Рекомендации по работе с исключениями"
+        A[Используйте для нештатных ситуаций] --> B[Создавайте иерархию исключений]
+        B --> C[Не используйте пустые except]
+        C --> D[Логируйте ошибки]
+        D --> E[Учитывайте производительность]
+    end
+```
 
 **Важные рекомендации:**
 1. Используйте исключения для обработки **нештатных** ситуаций, а не для управления потоком выполнения
 2. Создавайте собственную иерархию исключений для больших модулей
-3. Не используйте пустые блоки `except:` — всегда логируйте ошибки
+3. Не используйте пустые блоки `except:` — всегда логируйте ошибки 📝
 4. Учитывайте, что механизм исключений медленнее обычных проверок, поэтому не стоит использовать его внутри больших циклов, если ошибка ожидается часто
 
-**Сам механизм исключений достаточно медленный, поэтому, например, не очень хорошей идеей будет кидать исключение внутри цикла, когда мы точно знаем, что их будет достаточное большое количество.**
+**Сам механизм исключений достаточно медленный, поэтому, например, не очень хорошей идеей будет кидать исключение внутри цикла, когда мы точно знаем, что их будет достаточное большое количество.** ⚠️
 
